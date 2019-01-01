@@ -15,11 +15,12 @@ impl KarplusStrong {
         let mut wavetable = Vec::with_capacity(p);
         let mut rng = thread_rng();
         for _i in 0..p {
-            if rng.gen_range(0.0, 1.0) > 0.5 {
-                wavetable.push(1.0);
-            } else {
-                wavetable.push(-1.0);
-            }
+            wavetable.push(rng.gen_range(-1.0, 1.0));
+            // if rng.gen_range(0.0, 1.0) > 0.5 {
+            //     wavetable.push(1.0);
+            // } else {
+            //     wavetable.push(-1.0);
+            // }
             // if ((i * 4) % p) > (p / 2) {
             //     wavetable.push(rng.gen_range(-1.0, -0.5));
             // } else {
@@ -31,12 +32,6 @@ impl KarplusStrong {
 
 
         let mut ks = Self { wavetable, size: p, index: 0 };
-
-        for _ in 0..p {
-            ks.get();
-            ks.get();
-        }
-
         ks
     }
 
@@ -63,7 +58,7 @@ impl KarplusStrong {
 
 impl Source for KarplusStrong {
     fn get(&mut self) -> f64 {
-        let avg = (self.current() + self.prev()) * 0.497;
+        let avg = (self.current() + self.prev()) * 0.5;
         self.write(avg);
 
         self.index += 1;

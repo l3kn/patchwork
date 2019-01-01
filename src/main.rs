@@ -6,6 +6,7 @@ use rand::{Rng, thread_rng};
 
 use patchwork::source::*;
 use patchwork::source::waves::*;
+use patchwork::source::karplus_strong::*;
 use patchwork::source::math::*;
 
 const TWOPI: f64 = std::f64::consts::PI * 2.0;
@@ -100,52 +101,162 @@ fn open_audio_dev() -> Result<(alsa::PCM, u32), Box<error::Error>> {
 // Sample format
 type SF = i16;
 
-struct Sig {
-    note: u8,
-    sig: Box<Source>,
-    targetvol: f64,
-    curvol: f64,
+#[derive(Clone, Copy, PartialEq, Eq)]
+enum ADSRState {
+    Attacking,
+    Decaying,
+    Sustaining,
+    Releasing,
+    Done
 }
 
-impl Clone for Sig {
-    fn clone(&self) -> Sig {
-        let copy = self.sig.copy();
-        Sig {
-            note: self.note,
-            sig: copy,
-            targetvol: self.targetvol,
-            curvol: self.curvol
+struct ADSR {
+    attack_slope: f64,
+    decay_slope: f64,
+    sustain: f64,
+    release_slope: f64,
+    state: ADSRState,
+    value: f64,
+    source: Box<Source>,
+    note: u8,
+}
+
+impl Clone for ADSR {
+    fn clone(&self) -> ADSR {
+        ADSR {
+            attack_slope: self.attack_slope,
+            decay_slope: self.decay_slope,
+            sustain: self.sustain,
+            release_slope: self.release_slope,
+            state: self.state,
+            value: self.value,
+            source: self.source.copy(),
+            note: self.note
         }
     }
 }
 
+impl ADSR {
+    pub fn new(attack: f64, decay: f64, sustain: f64, release: f64, note: u8, source: Box<Source>, sample_rate: u32) -> Self {
+        assert!(0.0 <= sustain && sustain <= 1.0);
+
+        let attack_steps = attack * sample_rate as f64;
+        let decay_steps = decay * sample_rate as f64;
+        let release_steps = release * sample_rate as f64;
+
+        let attack_slope = 1.0 / attack_steps;
+        let decay_slope = -((1.0 - sustain) / decay_steps);
+        let release_slope = -(sustain / release_steps);
+
+        Self {
+            attack_slope,
+            decay_slope,
+            sustain,
+            release_slope,
+            state: ADSRState::Attacking,
+            value: 0.0,
+            source,
+            note
+        }
+    }
+
+    pub fn get(&mut self) -> f64 {
+        let ret = self.value * self.source.get();
+
+        match self.state {
+            ADSRState::Done => (),
+            ADSRState::Sustaining => (),
+            ADSRState::Attacking => {
+                self.value += self.attack_slope;
+                if self.value >= 1.0 {
+                    self.value = 1.0;
+                    self.state = ADSRState::Decaying;
+                }
+            },
+            ADSRState::Decaying => {
+                self.value += self.decay_slope;
+                if self.value <= self.sustain {
+                    self.value = self.sustain;
+                    self.state = ADSRState::Sustaining;
+                }
+            },
+            ADSRState::Releasing => {
+                self.value += self.release_slope;
+                if self.value <= 0.0 {
+                    self.value = 0.0;
+                    self.state = ADSRState::Done;
+                }
+            },
+        }
+
+        ret
+    }
+
+    // pub fn note_on(&mut self) {
+    //     self.state = ADSRState::Attacking;
+    // }
+
+    pub fn note_off(&mut self) {
+        self.state = ADSRState::Releasing;
+    }
+
+    pub fn is_done(&self) -> bool {
+        self.state == ADSRState::Done
+    }
+}
+
 struct Synth {
-    sigs: Vec<Option<Sig>>,
+    sigs: Vec<Option<ADSR>>,
     sample_rate: signal::Rate,
     stored_sample: Option<SF>,
+    writer: hound::WavWriter<std::io::BufWriter<std::fs::File>>,
 }
 
 impl Synth {
+    pub fn new(rate: u32) -> Self {
+        let spec = hound::WavSpec {
+            channels: 1,
+            sample_rate: SAMPLE_RATE,
+            bits_per_sample: 16,
+            sample_format: hound::SampleFormat::Int,
+        };
+
+        let mut writer = hound::WavWriter::create("capture.wav", spec).unwrap();
+        Self {
+            sigs: vec![None; 256],
+            sample_rate: signal::rate(f64::from(rate)),
+            stored_sample: None,
+            writer,
+        }
+    }
+
     fn add_note(&mut self, note: u8, vol: f64) {
         let hz = 440. * 2_f64.powf((note as f64 - 69.)/12.);
+
 
         let idx = self.sigs.iter().position(|s| s.is_none());
         let idx = if let Some(idx) = idx { idx } else {
             println!("Voice overflow!"); return;
         };
-        let sig = Mult::new(
-            Box::new(Square::new(hz, SAMPLE_RATE)),
-            Box::new(Saw::new(hz / 10.0, SAMPLE_RATE)),
+        let sig = Avg::new(
+            Box::new(Saw::new(hz, SAMPLE_RATE)),
+            Box::new(Saw::new(hz + 2.0, SAMPLE_RATE)),
+        );
+        let sig = Add::new(
+            Box::new(sig),
+            Box::new(Square::new(hz * 0.2, SAMPLE_RATE)),
         );
         // let sig = KarplusStrong::new(hz, SAMPLE_RATE);
-        let sig = Saw::new(hz, SAMPLE_RATE);
-        let s = Sig { sig: Box::new(sig), note, targetvol: vol, curvol: 0. };
-        self.sigs[idx] = Some(s);
+        // let sig = Saw::new(hz, SAMPLE_RATE);
+
+        let envelope = ADSR::new(0.1, 0.05, 0.9, 0.7, note, Box::new(sig), SAMPLE_RATE);
+
+        self.sigs[idx] = Some(envelope);
     }
     fn remove_note(&mut self, note: u8) {
         for i in self.sigs.iter_mut() {
             if let &mut Some(ref mut i) = i {
-                if i.note == note { i.targetvol = 0. }
+                if i.note == note { i.note_off() }
             }
         }
     }
@@ -163,23 +274,19 @@ impl Iterator for Synth {
         for sig in &mut self.sigs { 
             let mut remove = false;
             if let &mut Some(ref mut i) = sig {
-                let s = i.sig.get();
-                z += s.mul_amp(i.curvol);
-
-                // Quick and dirty volume envelope to avoid clicks. 
-                if i.curvol != i.targetvol {
-                    if i.targetvol == 0. {
-                        i.curvol -= 0.002;
-                        if i.curvol <= 0. { remove = true; }
-                    } else {
-                        i.curvol += 0.002;
-                        if i.curvol >= i.targetvol { i.curvol = i.targetvol; }
-                    }
+                z += i.get();
+                if i.is_done() {
+                    remove = true;
                 }
             }
-            if remove { *sig = None };
+            if remove {
+                *sig = None
+            };
         }
         let z = z.min(0.999).max(-0.999);
+
+        self.writer.write_sample(i16::from_sample(z)).unwrap();
+
         let z: Option<SF> = Some(SF::from_sample(z));
         self.stored_sample = z;
         z
@@ -236,11 +343,7 @@ fn run() -> Result<(), Box<error::Error>> {
     let mut midi_input = midi_dev.input();
 
     // 256 Voices synth
-    let mut synth = Synth {
-        sigs: vec![None; 256],
-        sample_rate: signal::rate(f64::from(rate)),
-        stored_sample: None,
-    };
+    let mut synth = Synth::new(rate);
 
     // Create an array of fds to poll.
     use alsa::PollDescriptors;

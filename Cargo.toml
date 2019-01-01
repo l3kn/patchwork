@@ -1,0 +1,12 @@
+[package]
+name = "patchwork"
+version = "0.1.0"
+authors = ["Leon Rische <leon.rische@me.com>"]
+edition = "2018"
+
+[dependencies]
+sample = "0.7"
+alsa = "0.2"
+clap = "2.20"
+hound = "3.4"
+rand = "0.6"

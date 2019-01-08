@@ -1,4 +1,5 @@
-use crate::util::{clamp, clamp_audio};
+use crate::util::clamp_audio;
+
 const TWOPI: f64 = std::f64::consts::PI * 2.0;
 
 pub trait Module {
@@ -31,7 +32,7 @@ impl Phase {
     }
 
     pub fn set_freq(&mut self, freq: f64) {
-        self.step = 1.0 / (self.sample_rate as f64 / freq);
+        self.step = 1.0 / (f64::from(self.sample_rate) / freq);
     }
 }
 
@@ -111,6 +112,43 @@ impl Module for Square {
     }
 }
 
+#[derive(Debug, Clone)]
+pub struct Avg4 {
+    v0: f64, v1: f64, v2: f64, v3: f64,
+    res: f64,
+}
+impl Avg4 {
+    pub fn new() -> Self {
+        Self { v0: 0.0, v1: 0.0, v2: 0.0, v3: 0.0, res: 0.0 }
+    }
+}
+impl Module for Avg4 {
+    fn get(&mut self) -> f64 {
+        self.res
+    }
+
+    fn set_input(&mut self, i: usize, val: f64) {
+        match i {
+            0 => {
+                self.v0 = val;
+                self.res = (self.v0 + self.v1 + self.v2 + self.v3) * 0.25;
+            }
+            1 => {
+                self.v1 = val;
+                self.res = (self.v0 + self.v1 + self.v2 + self.v3) * 0.25;
+            }
+            2 => {
+                self.v2 = val;
+                self.res = (self.v0 + self.v1 + self.v2 + self.v3) * 0.25;
+            }
+            3 => {
+                self.v3 = val;
+                self.res = (self.v0 + self.v1 + self.v2 + self.v3) * 0.25;
+            }
+            _ => ()
+        }
+    }
+}
 
 #[derive(Debug, Clone)]
 pub struct Avg {
@@ -229,6 +267,37 @@ impl Module for Mult {
 }
 
 #[derive(Debug, Clone)]
+pub struct Add {
+    v0: f64,
+    v1: f64,
+    res: f64,
+}
+impl Add {
+    pub fn new() -> Self {
+        Self { v0: 0.0, v1: 0.0, res: 0.0 }
+    }
+}
+impl Module for Add {
+    fn get(&mut self) -> f64 {
+        self.res
+    }
+
+    fn set_input(&mut self, i: usize, val: f64) {
+        match i {
+            0 => {
+                self.v0 = val;
+                self.res = self.v0 + self.v1;
+            }
+            1 => {
+                self.v1 = val;
+                self.res = self.v0 + self.v1;
+            }
+            _ => ()
+        }
+    }
+}
+
+#[derive(Debug, Clone)]
 pub struct Saw {
     phase: Phase,
 }
@@ -240,6 +309,29 @@ impl Saw {
 impl Module for Saw {
     fn get(&mut self) -> f64 {
         self.phase.get() * 2.0 - 1.0
+    }
+
+    fn set_input(&mut self, i: usize, val: f64) {
+        match i {
+            0 => self.phase.set_freq(val),
+            _ => ()
+        }
+    }
+}
+
+#[derive(Debug, Clone)]
+pub struct Triangle {
+    phase: Phase,
+}
+impl Triangle {
+    pub fn new(freq: f64, sample_rate: u32) -> Self {
+        Self { phase: Phase::new(freq, sample_rate) }
+    }
+}
+impl Module for Triangle {
+    fn get(&mut self) -> f64 {
+        let saw = (self.phase.get() * 2.0) - 1.0;
+        (saw * 2.0).abs() - 1.0
     }
 
     fn set_input(&mut self, i: usize, val: f64) {

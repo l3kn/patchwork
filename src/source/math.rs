@@ -38,37 +38,16 @@ impl Source for Mult {
     fn get(&mut self) -> f64 {
         self.sig1.get() * self.sig2.get()
     }
-
-    fn copy(&self) -> Box<Source> {
-        Box::new(Mult {
-            sig1: self.sig1.copy(),
-            sig2: self.sig2.copy(),
-        })
-    }
 }
 
 impl Source for Avg {
     fn get(&mut self) -> f64 {
         (self.sig1.get() + self.sig2.get()) * 0.5
     }
-
-    fn copy(&self) -> Box<Source> {
-        Box::new(Mult {
-            sig1: self.sig1.copy(),
-            sig2: self.sig2.copy(),
-        })
-    }
 }
 
 impl Source for Add {
     fn get(&mut self) -> f64 {
         clamp(self.sig1.get() + self.sig2.get(), -1.0, 1.0)
-    }
-
-    fn copy(&self) -> Box<Source> {
-        Box::new(Mult {
-            sig1: self.sig1.copy(),
-            sig2: self.sig2.copy(),
-        })
     }
 }

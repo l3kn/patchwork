@@ -1,10 +1,9 @@
 extern crate hound;
 extern crate rand;
 
-use std::f32::consts::PI;
 use std::i16;
 
-use rand::{Rng, thread_rng};
+use rand::thread_rng;
 
 struct KarplusStrong {
     wavetable: Vec<f32>,
@@ -206,6 +205,13 @@ fn main() {
     // G minor
     chords.push(Chord::new([-1, -1, 5, 7, 8, 6], sample_rate as usize));
 
+    let sample_rate = 44100;
+    let spec = hound::WavSpec {
+        channels: 1,
+        sample_rate,
+        bits_per_sample: 16,
+        sample_format: hound::SampleFormat::Int,
+    };
     let mut writer = hound::WavWriter::create("sine.wav", spec).unwrap();
     for t in 0..(8 * 44100) {
         let mut sample = 0.0;

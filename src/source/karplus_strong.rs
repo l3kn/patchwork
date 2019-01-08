@@ -10,7 +10,7 @@ pub struct KarplusStrong {
 
 impl KarplusStrong {
     pub fn new(freq: f64, sample_rate: u32) -> Self {
-        let p = (sample_rate as f64 / freq + 0.5) as usize;
+        let p = (f64::from(sample_rate) / freq + 0.5) as usize;
 
         let mut wavetable = Vec::with_capacity(p);
         let mut rng = thread_rng();
@@ -31,8 +31,7 @@ impl KarplusStrong {
         }
 
 
-        let mut ks = Self { wavetable, size: p, index: 0 };
-        ks
+        Self { wavetable, size: p, index: 0 }
     }
 
     fn prev(&self) -> f64 {
@@ -67,13 +66,5 @@ impl Source for KarplusStrong {
         }
 
         avg
-    }
-
-    fn copy(&self) -> Box<Source> {
-        Box::new(KarplusStrong {
-            wavetable: self.wavetable.clone(),
-            size: self.size,
-            index: self.index,
-        })
     }
 }

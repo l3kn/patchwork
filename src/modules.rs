@@ -1,3 +1,4 @@
+use crate::SAMPLE_RATE;
 use crate::util::clamp_audio;
 
 const TWOPI: f64 = std::f64::consts::PI * 2.0;
@@ -11,15 +12,13 @@ pub trait Module {
 pub struct Phase {
     value: f64,
     step: f64,
-    sample_rate: u32,
 }
 
 impl Phase {
-    pub fn new(freq: f64, sample_rate: u32) -> Self {
+    pub fn new(freq: f64) -> Self {
         Self {
             value: 0.0,
-            step: 1.0 / (sample_rate as f64 / freq),
-            sample_rate,
+            step: 1.0 / (SAMPLE_RATE / freq),
         }
     }
 
@@ -32,7 +31,7 @@ impl Phase {
     }
 
     pub fn set_freq(&mut self, freq: f64) {
-        self.step = 1.0 / (f64::from(self.sample_rate) / freq);
+        self.step = 1.0 / (SAMPLE_RATE / freq);
     }
 }
 
@@ -42,8 +41,8 @@ pub struct Sine {
 }
 
 impl Sine {
-    pub fn new(freq: f64, sample_rate: u32) -> Self {
-        Self { phase: Phase::new(freq, sample_rate) }
+    pub fn new(freq: f64) -> Self {
+        Self { phase: Phase::new(freq) }
     }
 }
 
@@ -65,8 +64,8 @@ pub struct Square0 {
     phase: Phase,
 }
 impl Square0 {
-    pub fn new(freq: f64, sample_rate: u32) -> Self {
-        Self { phase: Phase::new(freq, sample_rate) }
+    pub fn new(freq: f64) -> Self {
+        Self { phase: Phase::new(freq) }
     }
 }
 impl Module for Square0 {
@@ -91,8 +90,8 @@ pub struct Square {
     phase: Phase,
 }
 impl Square {
-    pub fn new(freq: f64, sample_rate: u32) -> Self {
-        Self { phase: Phase::new(freq, sample_rate) }
+    pub fn new(freq: f64) -> Self {
+        Self { phase: Phase::new(freq) }
     }
 }
 impl Module for Square {
@@ -302,8 +301,8 @@ pub struct Saw {
     phase: Phase,
 }
 impl Saw {
-    pub fn new(freq: f64, sample_rate: u32) -> Self {
-        Self { phase: Phase::new(freq, sample_rate) }
+    pub fn new(freq: f64) -> Self {
+        Self { phase: Phase::new(freq) }
     }
 }
 impl Module for Saw {
@@ -324,8 +323,8 @@ pub struct Triangle {
     phase: Phase,
 }
 impl Triangle {
-    pub fn new(freq: f64, sample_rate: u32) -> Self {
-        Self { phase: Phase::new(freq, sample_rate) }
+    pub fn new(freq: f64) -> Self {
+        Self { phase: Phase::new(freq) }
     }
 }
 impl Module for Triangle {
@@ -350,8 +349,8 @@ pub struct FeedbackDelay {
     input: f64,
 }
 impl FeedbackDelay {
-    pub fn new(length: f64, gain: f64, sample_rate: u32) -> Self {
-        let slots = (length * sample_rate as f64) as usize;
+    pub fn new(length: f64, gain: f64) -> Self {
+        let slots = (length * SAMPLE_RATE) as usize;
         let mut buffer = Vec::new();
         for _ in 0..slots {
             buffer.push(0.0);

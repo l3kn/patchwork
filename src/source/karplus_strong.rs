@@ -1,5 +1,6 @@
 use rand::{Rng, thread_rng};
 
+use crate::SAMPLE_RATE;
 use super::Source;
 
 pub struct KarplusStrong {
@@ -9,8 +10,8 @@ pub struct KarplusStrong {
 }
 
 impl KarplusStrong {
-    pub fn new(freq: f64, sample_rate: u32) -> Self {
-        let p = (f64::from(sample_rate) / freq + 0.5) as usize;
+    pub fn new(freq: f64) -> Self {
+        let p = (SAMPLE_RATE / freq + 0.5) as usize;
 
         let mut wavetable = Vec::with_capacity(p);
         let mut rng = thread_rng();

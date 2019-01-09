@@ -7,8 +7,9 @@ use patchwork::modules::*;
 // use patchwork::source::karplus_strong::*;
 // use patchwork::source::math::*;
 use patchwork::util::{clamp, clamp_audio};
-use patchwork::alsa::{SAMPLE_RATE, open_audio_dev, open_midi_dev};
+use patchwork::alsa::{open_audio_dev, open_midi_dev};
 use patchwork::freeverb::Freeverb;
+use patchwork::SAMPLE_RATE;
 
 // Sample format
 type SF = i16;
@@ -46,7 +47,7 @@ impl Rack {
 
         let spec = hound::WavSpec {
             channels: 1,
-            sample_rate: SAMPLE_RATE,
+            sample_rate: SAMPLE_RATE as u32,
             bits_per_sample: 16,
             sample_format: hound::SampleFormat::Int,
         };
@@ -233,19 +234,19 @@ fn run() -> Result<(), Box<error::Error>> {
     rack.patch(freq4_f, (freq4, 1));
 
     type W = Triangle;
-    let saw1_m = W::new(220.0, SAMPLE_RATE);
+    let saw1_m = Triangle::new(220.0);
     let saw1 = rack.register_module(Box::new(saw1_m));
     rack.patch(freq1, (saw1, 0));
 
-    let saw2_m = Saw::new(220.0, SAMPLE_RATE);
+    let saw2_m = Saw::new(220.0);
     let saw2 = rack.register_module(Box::new(saw2_m));
     rack.patch(freq2, (saw2, 0));
 
-    let saw3_m = Square::new(220.0, SAMPLE_RATE);
+    let saw3_m = Square::new(220.0);
     let saw3 = rack.register_module(Box::new(saw3_m));
     rack.patch(freq3, (saw3, 0));
 
-    let saw4_m = Sine::new(220.0, SAMPLE_RATE);
+    let saw4_m = Sine::new(220.0);
     let saw4 = rack.register_module(Box::new(saw4_m));
     rack.patch(freq4, (saw4, 0));
 

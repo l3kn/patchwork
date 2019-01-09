@@ -23,26 +23,26 @@ pub struct Saw {
 }
 
 impl Sine {
-    pub fn new(freq: f64, sample_rate: u32) -> Self {
-        Self { phase: Phase::new(freq, sample_rate) }
+    pub fn new(freq: f64) -> Self {
+        Self { phase: Phase::new(freq) }
     }
 }
 
 impl Square {
-    pub fn new(freq: f64, sample_rate: u32) -> Self {
-        Self { phase: Phase::new(freq, sample_rate) }
+    pub fn new(freq: f64) -> Self {
+        Self { phase: Phase::new(freq) }
     }
 }
 
 impl Square0 {
-    pub fn new(freq: f64, sample_rate: u32) -> Self {
-        Self { phase: Phase::new(freq, sample_rate) }
+    pub fn new(freq: f64) -> Self {
+        Self { phase: Phase::new(freq) }
     }
 }
 
 impl Saw {
-    pub fn new(freq: f64, sample_rate: u32) -> Self {
-        Self { phase: Phase::new(freq, sample_rate) }
+    pub fn new(freq: f64) -> Self {
+        Self { phase: Phase::new(freq) }
     }
 }
 

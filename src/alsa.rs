@@ -1,9 +1,9 @@
 use std::ffi::CString;
 use std::error;
 
+use crate::SAMPLE_RATE;
 use alsa::{seq, pcm};
 
-pub const SAMPLE_RATE: u32 = 48000;
 const BUFFER_SIZE: i64 = 512;
 
 fn connect_midi_source_ports(s: &alsa::Seq, our_port: i32) -> Result<(), Box<error::Error>> {
@@ -61,7 +61,7 @@ pub fn open_audio_dev() -> Result<(alsa::PCM, u32), Box<error::Error>> {
     {
         let hwp = pcm::HwParams::any(&p)?;
         hwp.set_channels(2)?;
-        hwp.set_rate(SAMPLE_RATE, alsa::ValueOr::Nearest)?;
+        hwp.set_rate(SAMPLE_RATE as u32, alsa::ValueOr::Nearest)?;
         hwp.set_format(pcm::Format::s16())?;
         hwp.set_access(pcm::Access::MMapInterleaved)?;
         hwp.set_buffer_size(BUFFER_SIZE)?;

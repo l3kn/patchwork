@@ -3,7 +3,7 @@ extern crate rand;
 
 use std::i16;
 
-use rand::thread_rng;
+use rand::{thread_rng, Rng};
 
 struct KarplusStrong {
     wavetable: Vec<f32>,
@@ -52,18 +52,18 @@ impl KarplusStrong {
 
         let mut wavetable = Vec::with_capacity(p);
         let mut rng = thread_rng();
-        for i in 0..p {
-            // if rng.gen_range(0.0, 1.0) > 0.5 {
-            //     wavetable.push(1.0);
-            // } else {
-            //     wavetable.push(-1.0);
-            // }
+        for _i in 0..p {
+            if rng.gen_range(0.0, 1.0) > 0.5 {
+                wavetable.push(1.0);
+            } else {
+                wavetable.push(-1.0);
+            }
             // if ((i * 4) % p) > (p / 2) {
             //     wavetable.push(rng.gen_range(-1.0, -0.5));
             // } else {
             //     wavetable.push(rng.gen_range(0.5, 1.0));
             // }
-            wavetable.push((((i as f32) / p as f32) % 1.0) * 2.0 - 1.0);
+            // wavetable.push((((i as f32) / p as f32) % 1.0) * 2.0 - 1.0);
             // wavetable.push(rng.gen_range(-1.0, 1.0));
         }
 
@@ -183,26 +183,50 @@ fn main() {
 
     // D minor
     chords.push(Chord::new([-1, -1, 0, 2, 3, 1], sample_rate as usize));
-
-    // A sharp
-    chords.push(Chord::new([-1, -1, 8, 10, 11, 10], sample_rate as usize));
-
-    // F
-    chords.push(Chord::new([-1, -1, 3, 5, 6, 5], sample_rate as usize));
-
-    // G minor
-    chords.push(Chord::new([-1, -1, 5, 7, 8, 6], sample_rate as usize));
-
-    // D minor
+    chords.push(Chord::new([-1, -1, 0, 2, 3, 1], sample_rate as usize));
+    chords.push(Chord::new([-1, -1, 0, 2, 3, 1], sample_rate as usize));
     chords.push(Chord::new([-1, -1, 0, 2, 3, 1], sample_rate as usize));
 
     // A sharp
     chords.push(Chord::new([-1, -1, 8, 10, 11, 10], sample_rate as usize));
+    chords.push(Chord::new([-1, -1, 8, 10, 11, 10], sample_rate as usize));
+    chords.push(Chord::new([-1, -1, 8, 10, 11, 10], sample_rate as usize));
+    chords.push(Chord::new([-1, -1, 8, 10, 11, 10], sample_rate as usize));
 
     // F
     chords.push(Chord::new([-1, -1, 3, 5, 6, 5], sample_rate as usize));
+    chords.push(Chord::new([-1, -1, 3, 5, 6, 5], sample_rate as usize));
+    chords.push(Chord::new([-1, -1, 3, 5, 6, 5], sample_rate as usize));
+    chords.push(Chord::new([-1, -1, 3, 5, 6, 5], sample_rate as usize));
 
     // G minor
+    chords.push(Chord::new([-1, -1, 5, 7, 8, 6], sample_rate as usize));
+    chords.push(Chord::new([-1, -1, 5, 7, 8, 6], sample_rate as usize));
+    chords.push(Chord::new([-1, -1, 5, 7, 8, 6], sample_rate as usize));
+    chords.push(Chord::new([-1, -1, 5, 7, 8, 6], sample_rate as usize));
+
+    // D minor
+    chords.push(Chord::new([-1, -1, 0, 2, 3, 1], sample_rate as usize));
+    chords.push(Chord::new([-1, -1, 0, 2, 3, 1], sample_rate as usize));
+    chords.push(Chord::new([-1, -1, 0, 2, 3, 1], sample_rate as usize));
+    chords.push(Chord::new([-1, -1, 0, 2, 3, 1], sample_rate as usize));
+
+    // A sharp
+    chords.push(Chord::new([-1, -1, 8, 10, 11, 10], sample_rate as usize));
+    chords.push(Chord::new([-1, -1, 8, 10, 11, 10], sample_rate as usize));
+    chords.push(Chord::new([-1, -1, 8, 10, 11, 10], sample_rate as usize));
+    chords.push(Chord::new([-1, -1, 8, 10, 11, 10], sample_rate as usize));
+
+    // F
+    chords.push(Chord::new([-1, -1, 3, 5, 6, 5], sample_rate as usize));
+    chords.push(Chord::new([-1, -1, 3, 5, 6, 5], sample_rate as usize));
+    chords.push(Chord::new([-1, -1, 3, 5, 6, 5], sample_rate as usize));
+    chords.push(Chord::new([-1, -1, 3, 5, 6, 5], sample_rate as usize));
+
+    // G minor
+    chords.push(Chord::new([-1, -1, 5, 7, 8, 6], sample_rate as usize));
+    chords.push(Chord::new([-1, -1, 5, 7, 8, 6], sample_rate as usize));
+    chords.push(Chord::new([-1, -1, 5, 7, 8, 6], sample_rate as usize));
     chords.push(Chord::new([-1, -1, 5, 7, 8, 6], sample_rate as usize));
 
     let sample_rate = 44100;
@@ -213,7 +237,7 @@ fn main() {
         sample_format: hound::SampleFormat::Int,
     };
     let mut writer = hound::WavWriter::create("sine.wav", spec).unwrap();
-    for t in 0..(8 * 44100) {
+    for t in 0..(32 * 44100) {
         let mut sample = 0.0;
         for i in 0..chords.len() {
             if t >= i * 44000 {
